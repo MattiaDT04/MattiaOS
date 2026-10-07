@@ -8,10 +8,61 @@ mov ds,ax
 mov ss,ax
 mov sp, 0x7C00
 
+mov [boot_drive], dl
+
 sti       
 
 mov si, messaggio
 mov ah, 0x0E
+
+carica_kernel:
+
+    xor ax, ax
+    mov es, ax
+
+    mov bx, 0x9000
+
+    mov ah, 0x02
+    mov al, 0x04
+
+    mov ch, 0x00
+    mov cl, 0x06
+    mov dh, 0x00
+
+    mov dl, [boot_drive]
+
+    int 0x13
+
+    jc errore_disco
+
+    jmp entra_32bit
+
+errore_disco:
+
+    mov si, errore_msg
+    mov ah, 0x0E
+
+
+errore_loop:
+
+    mov al, [si]
+
+    cmp al, 0
+    je $
+
+    int 0x10
+
+    inc si
+
+    jmp errore_loop
+
+
+errore_msg:
+    db "Errore caricamento kernel", 0
+
+
+boot_drive:
+    db 0
 
 stampa:
     mov al, [si]
@@ -59,11 +110,13 @@ protected_mode:
     
     call stampa32
 
+    jmp 0x9000
+
 
 stampa32:
     mov al, [esi]
     cmp al,0
-    je stop32
+    je finestampa32
 
      mov byte [edi], al
     mov byte [edi + 1], 0x0F
